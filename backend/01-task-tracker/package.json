@@ -1,0 +1,18 @@
+{
+  "name": "01-task-tracker",
+  "version": "1.0.0",
+  "description": "Simple task tracker cli written in javascript",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "cli",
+    "task-tracker",
+    "javascript",
+    "nodejs"
+  ],
+  "author": "Miqdad Hafiansyah",
+  "license": "ISC",
+  "type": "module"
+}
