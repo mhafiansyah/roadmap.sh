@@ -1,33 +1,31 @@
 import process from 'node:process';
 import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { URL } from 'node:url';
 
 // workaround for __dirname doesnt exists in module type nodejs
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_FILE = 'tasks.json';
-const FILE_PATH = path.join(__dirname, DB_FILE);
+
+const DB_URL = new URL ('./tasks.json', import.meta.url);
 
 const initDB = async () => {
     try {
         // check if file exists
-        await fs.access(FILE_PATH);
+        await fs.access(DB_URL);
     } catch (err) {
         // create file with empty array if file doesn't exists
-        await fs.writeFile(FILE_PATH, JSON.stringify([], null, 2));
+        await fs.writeFile(DB_URL, JSON.stringify([], null, 2));
         console.log("Initialized new database.");
     }
 }
 
 const getTasks = async () => {
-    const data = await fs.readFile(FILE_PATH, 'utf-8');
+    const data = await fs.readFile(DB_URL, 'utf-8');
     // return as JSON so it can be read easily
     return JSON.parse(data);
 }
 
 const saveTasks = async (tasks) => {
     // add new tasks as normal string instead of JSON data type
-    await fs.writeFile(FILE_PATH, JSON.stringify(tasks, null, 2));
+    await fs.writeFile(DB_URL, JSON.stringify(tasks, null, 2));
 }
 
 const tasksStatusUpdate = async (id, tasks, status) => {
