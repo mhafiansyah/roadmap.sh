@@ -34,13 +34,19 @@ async function main() {
     try {
         await initDB();
         let tasks = await getTasks();
+        const now = new Date().toISOString();
 
         switch (command.toLowerCase()) {
             case 'add':
                 try{
                     const taskName = args.join(' ');
                     // use current date as key of object
-                    tasks[Date.now()] = {task: taskName, status: 'todo'};
+                    tasks[Date.now()] = {
+                        task: taskName,
+                        status: 'todo',
+                        createdAt: now,
+                        updatedAt: now
+                    };
                     await saveTasks(tasks);
                     console.log('Tasks Added');
                 } catch (err) {
@@ -72,7 +78,9 @@ async function main() {
                     const tableData = entries.map(([id, data]) => ({
                         id,
                         task: data.task,
-                        status: data.status
+                        status: data.status,
+                        created: data.createdAt.split('.')[0].replace('T','@'),
+                        updated: data.updatedAt.split('.')[0].replace('T','@')
                     }));
                     console.table(tableData);
                 }
@@ -83,6 +91,7 @@ async function main() {
                     const progressID = args[0];
                     if (tasks[progressID]) {
                         tasks[progressID].status = 'in-progress';
+                        tasks[progressID].updatedAt = now;
                         await saveTasks(tasks);
                         console.log(`Task ${progressID} marked as in-progress.`);
                     } else {
@@ -98,6 +107,7 @@ async function main() {
                     const doneID = args[0];
                     if (tasks[doneID]) {
                         tasks[doneID].status = 'done';
+                        tasks[doneID].updatedAt = now;
                         await saveTasks(tasks);
                         console.log(`Task ${doneID} marked as done.`);
                     } else {
