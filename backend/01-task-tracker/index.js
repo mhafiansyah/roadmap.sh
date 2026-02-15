@@ -38,15 +38,16 @@ async function main() {
 
         switch (command.toLowerCase()) {
             case 'add':
-                try{
-                    const taskName = args.join(' ');
-                    // use current date as key of object
-                    tasks[Date.now()] = {
-                        task: taskName,
-                        status: 'todo',
-                        createdAt: now,
-                        updatedAt: now
-                    };
+                try {
+                    args.forEach((taskName) => {
+                        const id = Date.now() + Math.floor(Math.random() * 1000); // to prevent ID collision in batch
+                        tasks[id] = {
+                            task: taskName,
+                            status: 'todo',
+                            createdAt: now,
+                            updatedAt: now
+                        };
+                    });
                     await saveTasks(tasks);
                     console.log('Tasks Added');
                 } catch (err) {
@@ -88,15 +89,16 @@ async function main() {
 
             case 'progress':
                 try {
-                    const progressID = args[0];
-                    if (tasks[progressID]) {
-                        tasks[progressID].status = 'in-progress';
-                        tasks[progressID].updatedAt = now;
-                        await saveTasks(tasks);
-                        console.log(`Task ${progressID} marked as in-progress.`);
-                    } else {
-                        console.log(`Task ${progressID} not found.`)
-                    }
+                    args.forEach((progressID) => {
+                        if (tasks[progressID]) {
+                            tasks[progressID].status = 'in-progress';
+                            tasks[progressID].updatedAt = now;
+                            console.log(`Task ${progressID} marked as in-progress.`);
+                        } else {
+                            console.log(`Task ${progressID} not found.`)
+                        }
+                    });
+                    await saveTasks(tasks);
                 } catch (err) {
                     console.error("🚀 ~ main ~ err:", err)
                 }
@@ -104,15 +106,16 @@ async function main() {
 
             case 'done':
                 try {
-                    const doneID = args[0];
-                    if (tasks[doneID]) {
-                        tasks[doneID].status = 'done';
-                        tasks[doneID].updatedAt = now;
-                        await saveTasks(tasks);
-                        console.log(`Task ${doneID} marked as done.`);
-                    } else {
-                        console.log(`Task ${doneID} not found.`)
-                    }
+                    args.forEach((doneID) => {
+                        if (tasks[doneID]) {
+                            tasks[doneID].status = 'done';
+                            tasks[doneID].updatedAt = now;
+                            console.log(`Task ${doneID} marked as done.`);
+                        } else {
+                            console.log(`Task ${doneID} not found.`)
+                        }
+                    });
+                    await saveTasks(tasks);
                 } catch (err) {
                     console.error("🚀 ~ main ~ err:", err)
                 }
@@ -120,14 +123,15 @@ async function main() {
 
             case 'delete':
                 try {
-                    const delID = args[0];
-                    if (tasks[delID]) {
-                        delete tasks[delID];
-                        await saveTasks(tasks);
-                        console.log(`Task ${delID} removed.`)
-                    } else {
-                        console.log(`Task ${delID} not found.`)
-                    }
+                    args.forEach((delID) => {
+                        if (tasks[delID]) {
+                            delete tasks[delID];
+                            console.log(`Task ${delID} removed.`)
+                        } else {
+                            console.log(`Task ${delID} not found.`)
+                        }
+                    });
+                    await saveTasks(tasks);
                 } catch (err) {
                     console.error("🚀 ~ main ~ err:", err)
                 }
