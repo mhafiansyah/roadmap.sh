@@ -1,6 +1,7 @@
 import process from 'node:process';
 import fs from 'node:fs/promises';
 import { URL } from 'node:url';
+import crypto from 'node:crypto';
 
 // workaround for __dirname doesnt exists in module type nodejs
 
@@ -28,6 +29,10 @@ const saveTasks = async (tasks) => {
     await fs.writeFile(DB_URL, JSON.stringify(tasks, null, 2));
 }
 
+const generateID = (length = 6) => {
+    return crypto.randomBytes(length).toString('hex').slice(0, length);
+}
+
 const [,, command, ...args] = process.argv;
 
 async function main() {
@@ -39,8 +44,13 @@ async function main() {
         switch (command?.toLowerCase()) {
             case 'add':
                 try {
+                    const input = args.join(' ');
+                    if (!input) return console.log('No tasks provided');
+                    
                     args.forEach((taskName) => {
-                        const id = Date.now() + Math.floor(Math.random() * 1000); // to prevent ID collision in batch
+                        let id = generateID();
+                        while(tasks[id]) { id = generateID(); }
+
                         tasks[id] = {
                             task: taskName,
                             status: 'todo',
@@ -76,9 +86,9 @@ async function main() {
                     }))
                     .filter((item) => {
                         if (filterArg === 'done' || filterArg === 'd') return item.status === 'done';
-                        if (filterArg === 'in-progress' || filterArg === 'p') return item.status === 'in-progress';
-                        if (filterArg === 'todo' || filterArg === 't') return item.status === 'todo';
-                        return true;
+                        else if (filterArg === 'in-progress' || filterArg === 'p') return item.status === 'in-progress';
+                        else if (filterArg === 'todo' || filterArg === 't') return item.status === 'todo';
+                        else return true; // return all item if there is no filter
                     });
                 
                 if (tableData.length === 0) {
@@ -90,16 +100,22 @@ async function main() {
 
             case 'progress':
                 try {
+                    const progressCount = 0;
                     args.forEach((progressID) => {
                         if (tasks[progressID]) {
                             tasks[progressID].status = 'in-progress';
                             tasks[progressID].updatedAt = now;
+                            progressCount++;
                             console.log(`Task ${progressID} marked as in-progress.`);
                         } else {
                             console.log(`Task ${progressID} not found.`)
                         }
                     });
-                    await saveTasks(tasks);
+
+                    if (progressCount > 0) {
+                        await saveTasks(tasks);
+                        console.log(`successfully marked ${progressCount} as in-progress`);
+                    }
                 } catch (err) {
                     console.error("🚀 ~ main ~ err:", err)
                 }
@@ -107,16 +123,22 @@ async function main() {
 
             case 'done':
                 try {
+                    let doneCount = 0;
                     args.forEach((doneID) => {
                         if (tasks[doneID]) {
                             tasks[doneID].status = 'done';
                             tasks[doneID].updatedAt = now;
+                            doneCount++;
                             console.log(`Task ${doneID} marked as done.`);
                         } else {
                             console.log(`Task ${doneID} not found.`)
                         }
                     });
-                    await saveTasks(tasks);
+
+                    if (doneCount > 0) {
+                        await saveTasks(tasks);
+                        console.log(`successfuly marked ${doneCount} tasks as done`);
+                    }
                 } catch (err) {
                     console.error("🚀 ~ main ~ err:", err)
                 }
@@ -189,7 +211,7 @@ async function main() {
                 break;
 
             default:
-                console.log('nothing');
+                console.log('Commands: add <"task">, list [p/d/t], done <id...>, delete/del <id...>, find/search <query> edit <id> <"task">');
                 break;
         }
     } catch (err) {
