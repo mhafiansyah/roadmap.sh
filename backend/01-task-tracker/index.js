@@ -139,6 +139,55 @@ async function main() {
                 }
                 break;
 
+            case 'find':
+            case 'search':
+                const query = args.join(' ').toLowerCase();
+                if (!query) return console.log('Please provide a search term.')
+
+                const results = Object.entries(tasks)
+                    .filter(([_, data]) => data.task.toLowerCase().includes(query))
+                    .map(([id, data]) => ({
+                        id,
+                        task: data.task,
+                        status: data.status,
+                        created: data.createdAt.split('.')[0].replace('T','@'),
+                        updated: data.updatedAt.split('.')[0].replace('T','@')
+                    }))
+                
+                if (results.length === 0) {
+                    console.log(`No tasks found matching: ${query}`);
+                } else {
+                    console.log(`Search results for ${query}`);
+                    console.table(results);
+                }
+                break;
+            
+            case 'edit':
+                try {
+                    const editID = args[0];
+                    const newDesc = args.slice(1).join(' ').trim();
+
+                    if (!editID || !newDesc) {
+                        console.log('Usage: node task.js edit <id> <new description></new>');
+                        break;
+                    }
+
+                    if (tasks[editID]) {
+                        const oldDesc = tasks[editID].task;
+                        tasks[editID].task = newDesc;
+                        tasks[editID].updatedAt = new Date().toISOString();
+
+                        await saveTasks(tasks);
+                        console.log(`${editID} task updated.`);
+                        console.log(`From: ${oldDesc}`);
+                        console.log(`To: ${newDesc}`);
+                    }
+                } catch (err) {
+                    console.error("🚀 ~ main ~ err:", err)
+                }
+                
+                break;
+
             default:
                 console.log('nothing');
                 break;
