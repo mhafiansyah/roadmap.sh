@@ -11,27 +11,21 @@ const initDB = async () => {
         // check if file exists
         await fs.access(DB_URL);
     } catch (err) {
-        // create file with empty array if file doesn't exists
-        await fs.writeFile(DB_URL, JSON.stringify([], null, 2));
+        // create file with empty JSON if file doesn't exists
+        await fs.writeFile(DB_URL, JSON.stringify({}, null, 2));
         console.log("Initialized new database.");
     }
 }
 
 const getTasks = async () => {
     const data = await fs.readFile(DB_URL, 'utf-8');
-    // return as JSON so it can be read easily
+    // parse as JSON because currently it's a string
     return JSON.parse(data);
 }
 
 const saveTasks = async (tasks) => {
-    // add new tasks as normal string instead of JSON data type
+    // stringify new tasks to treat as normal string
     await fs.writeFile(DB_URL, JSON.stringify(tasks, null, 2));
-}
-
-const tasksStatusUpdate = async (id, tasks, status) => {
-    const taskID = parseInt(id);
-    tasks = tasks.map(t => t.id === taskID ? {...t, status: status} : t);
-    await saveTasks(tasks);
 }
 
 const [,, command, ...args] = process.argv;
@@ -43,62 +37,89 @@ async function main() {
 
         switch (command.toLowerCase()) {
             case 'add':
-                const taskName = args.join(' ');
-                tasks.push({ id: Date.now(), task: taskName, status: 'todo' });
-                await saveTasks(tasks);
-                console.log('Tasks Added');
+                try{
+                    const taskName = args.join(' ');
+                    // use current date as key of object
+                    tasks[Date.now()] = {task: taskName, status: 'todo'};
+                    await saveTasks(tasks);
+                    console.log('Tasks Added');
+                } catch (err) {
+                    console.error("🚀 ~ main ~ err:", err)
+                }
                 break;
 
             case 'list':
-                if (tasks.length === 0) {
-                    console.log('Your tasks list is empty');
+                let entries = Object.entries(tasks);
+                // set userfilter based on user arguments, or use empty string if no argument is provided
+                let userFilter = args[0] || '';
+                if (userFilter.toLowerCase() === 'd' || userFilter.toLowerCase() === 'done') {
+                    userFilter = 'done';
+                } else if (userFilter.toLowerCase() === 'p' || userFilter.toLowerCase() === 'in-progress') {
+                    userFilter = 'in-progress';
+                } else if (userFilter.toLowerCase() === 't' || userFilter.toLowerCase() === 'todo') {
+                    userFilter = 'todo';
+                }
+
+                // filter only if user provide arguments, empty string is equal to false, so the condition doesnt fulfill
+                if (userFilter) {
+                    entries = entries.filter(entry => entry[1].status === userFilter);
+                }
+
+                if (entries.length === 0) {
+                    console.log('Your task list is empty');
                 } else {
-                    const status = args[0] || '';
-                    if (status.toLowerCase() === 'in-progress' || status.toLowerCase() === 'p') {
-                        tasks = tasks.filter(t => t.status === 'in-progress');
-                    }
-                    else if (status.toLowerCase() === 'done' || status.toLowerCase() === 'd') {
-                        tasks = tasks.filter(t => t.status === 'done');
-                    }
-                    else if (status.toLowerCase() === 'todo' || status.toLowerCase() === 't') {
-                        tasks = tasks.filter(t => t.status === 'todo');
-                    }
-                    console.table(tasks);
+                    // make an array to use for console.table
+                    const tableData = entries.map(([id, data]) => ({
+                        id,
+                        task: data.task,
+                        status: data.status
+                    }));
+                    console.table(tableData);
                 }
                 break;
 
             case 'progress':
                 try {
                     const progressID = args[0];
-                    await tasksStatusUpdate(progressID, tasks, 'in-progress');
-                    console.log(`Tasks ${progressID} marked as in-progress`);
+                    if (tasks[progressID]) {
+                        tasks[progressID].status = 'in-progress';
+                        await saveTasks(tasks);
+                        console.log(`Task ${progressID} marked as in-progress.`);
+                    } else {
+                        console.log(`Task ${progressID} not found.`)
+                    }
                 } catch (err) {
-                    console.error(`error on progress, ${err}`);
+                    console.error("🚀 ~ main ~ err:", err)
                 }
                 break;
 
             case 'done':
                 try {
                     const doneID = args[0];
-                    await tasksStatusUpdate(doneID, tasks, 'done');
-                    console.log(`Tasks ${doneID} marked as done!`)
+                    if (tasks[doneID]) {
+                        tasks[doneID].status = 'done';
+                        await saveTasks(tasks);
+                        console.log(`Task ${doneID} marked as done.`);
+                    } else {
+                        console.log(`Task ${doneID} not found.`)
+                    }
                 } catch (err) {
-                    console.error(`error on done, ${err}`);
+                    console.error("🚀 ~ main ~ err:", err)
                 }
-
                 break;
 
             case 'delete':
-                const delID = parseInt(args[0]);
-                const initialLength = delID.length;
-
-                tasks = tasks.filter(task => task.id !== delID);
-
-                if (tasks.length = initialLength) {
-                    console.log(`Could not find task with ID ${delID}`);
-                } else {
-                    await saveTasks(tasks);
-                    console.log(`Task ID ${delID} deleted`);
+                try {
+                    const delID = args[0];
+                    if (tasks[delID]) {
+                        delete tasks[delID];
+                        await saveTasks(tasks);
+                        console.log(`Task ${delID} removed.`)
+                    } else {
+                        console.log(`Task ${delID} not found.`)
+                    }
+                } catch (err) {
+                    console.error("🚀 ~ main ~ err:", err)
                 }
                 break;
 
@@ -109,8 +130,6 @@ async function main() {
     } catch (err) {
         console.error("Error:", err.message);
     }
-
-    
 }
 
 
