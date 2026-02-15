@@ -36,7 +36,7 @@ async function main() {
         let tasks = await getTasks();
         const now = new Date().toISOString();
 
-        switch (command.toLowerCase()) {
+        switch (command?.toLowerCase()) {
             case 'add':
                 try {
                     args.forEach((taskName) => {
@@ -56,35 +56,36 @@ async function main() {
                 break;
 
             case 'list':
-                let entries = Object.entries(tasks);
-                // set userfilter based on user arguments, or use empty string if no argument is provided
-                let userFilter = args[0] || '';
-                if (userFilter.toLowerCase() === 'd' || userFilter.toLowerCase() === 'done') {
-                    userFilter = 'done';
-                } else if (userFilter.toLowerCase() === 'p' || userFilter.toLowerCase() === 'in-progress') {
-                    userFilter = 'in-progress';
-                } else if (userFilter.toLowerCase() === 't' || userFilter.toLowerCase() === 'todo') {
-                    userFilter = 'todo';
-                }
-
-                // filter only if user provide arguments, empty string is equal to false, so the condition doesnt fulfill
-                if (userFilter) {
-                    entries = entries.filter(entry => entry[1].status === userFilter);
-                }
+                const filterArg = args[0]?.toLowerCase();
+                const entries = Object.entries(tasks);
 
                 if (entries.length === 0) {
                     console.log('Your task list is empty');
-                } else {
-                    // make an array to use for console.table
-                    const tableData = entries.map(([id, data]) => ({
+                    break;
+                }
+                // need to wrap JSON in (parantheses) otherwise it will be treated as a function code block which will give an error if written without return
+                // () => { ... } → Expects code and a return keyword.
+                // () => ({ ... }) → Automatically returns the object inside.
+                const tableData = entries
+                    .map(([id, data]) => ({
                         id,
                         task: data.task,
                         status: data.status,
                         created: data.createdAt.split('.')[0].replace('T','@'),
                         updated: data.updatedAt.split('.')[0].replace('T','@')
-                    }));
-                    console.table(tableData);
-                }
+                    }))
+                    .filter((item) => {
+                        if (filterArg === 'done' || filterArg === 'd') return item.status === 'done';
+                        if (filterArg === 'in-progress' || filterArg === 'p') return item.status === 'in-progress';
+                        if (filterArg === 'todo' || filterArg === 't') return item.status === 'todo';
+                        return true;
+                    });
+                
+                if (tableData.length === 0) {
+                    console.log(`No tasks found for filter ${filterArg}`);
+                } else {
+                    console.table(tableData);   
+                }             
                 break;
 
             case 'progress':
@@ -120,7 +121,8 @@ async function main() {
                     console.error("🚀 ~ main ~ err:", err)
                 }
                 break;
-
+            
+            case 'del':
             case 'delete':
                 try {
                     args.forEach((delID) => {
