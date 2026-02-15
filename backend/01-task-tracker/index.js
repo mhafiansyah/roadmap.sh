@@ -98,9 +98,32 @@ async function main() {
                 }             
                 break;
 
+            case 'todo':
+                try {
+                    let todoCount = 0;
+                    args.forEach((todoID) => {
+                        if (tasks[todoID]) {
+                            tasks[todoID].status = 'todo';
+                            tasks[todoID].updatedAt = now;
+                            todoCount++;
+                            console.log(`Task ${todoID} marked as todo.`);
+                        } else {
+                            console.log(`Task ${todoID} not found.`)
+                        }
+                    });
+
+                    if (todoCount > 0) {
+                        await saveTasks(tasks);
+                        console.log(`successfully marked ${todoCount} as todo`);
+                    }
+                } catch (err) {
+                    console.error("🚀 ~ main ~ err:", err)
+                }
+                break;
+            
             case 'progress':
                 try {
-                    const progressCount = 0;
+                    let progressCount = 0;
                     args.forEach((progressID) => {
                         if (tasks[progressID]) {
                             tasks[progressID].status = 'in-progress';
@@ -211,7 +234,7 @@ async function main() {
                 break;
 
             default:
-                console.log('Commands: add <"task">, list [p/d/t], done <id...>, delete/del <id...>, find/search <query> edit <id> <"task">');
+                console.log('Commands: add <"task">, list [p/d/t], progress <id...>, done <id...>, delete/del <id...>, find/search <query> edit <id> <"task">');
                 break;
         }
     } catch (err) {
