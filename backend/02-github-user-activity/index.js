@@ -67,16 +67,57 @@ function getActionName(event) {
     }
 }
 
-// Top-level await is available in ES Modules
-const events = await fetchGithubActivity();
-
-if (events.length === 0) {
-    console.log(`There is no recent activity for this user`);
-} else {
-    events.forEach((event) => {
-        const action = getActionName(event);
-        const repo = event.repo.name;
-
-        console.log(`- ${action} in ${repo}`);
-    })
+// use local cache on development environment
+async function fetchLocalCache() {
+    const localCache = JSON.parse(await fs.readFile(CACHE_FILE, 'utf-8'));
+    return localCache.data;
 }
+
+// Top-level await is available in ES Modules
+
+// use local fetch on development environment, change to remote fetch on live environment
+// const event = await fetchGithubActivity();
+const events = await fetchLocalCache();
+
+const groupByEvent = events.reduce((accumulator, event) => {
+    const action = getActionName(event);
+    const repo = event.repo.name;
+
+    // check action already exist, if not create an object with action as key
+    if (!accumulator[action]) accumulator[action] = {};
+    accumulator[action][repo] = (accumulator[action][repo] || 0) + 1;
+
+    return accumulator;
+}, {});
+
+const actionType = Object.keys(groupByEvent);
+
+console.log(`Event Based Summary for ${username}`);
+console.log(`${'-'.repeat(50)}`);
+
+if (actionType.length === 0) {
+    console.log('No recent activity found for this user');
+} else {
+    actionType.forEach((action) => {
+        console.log(`\n${action}`);
+
+        const sortedRepos = Object.entries(groupByEvent[action])
+            // Object.entries(groupByEvent[action]) will return something like this
+            // [ 'SnosMe/poe-dat-viewer', 1 ] [ 'SnosMe/awakened-poe-trade', 4 ] 
+            // you can sort with / without destructuring the array
+
+            // sort without destructuring the array
+            // need to give the array second element, because the first element is the repo name
+            // .sort((a, b) => b[1] - a[1]);
+
+            // Destructured way (cleaner)
+            // The "empty" space before the comma skips the repository name string.
+            .sort(([, a], [, b]) => b - a);
+
+        for (const [repo, count] of sortedRepos) {
+            const label = count > 1 ? 'occurences' : 'occurence';
+            console.log(`|- ${repo.padEnd(35)} [${count} ${label}]`);
+        }
+    });
+}
+console.log(`${'-'.repeat(50)}`);
