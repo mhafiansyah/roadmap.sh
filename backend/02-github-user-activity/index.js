@@ -8,7 +8,7 @@ if (!username) {
 }
 
 async function main() {
-    const URL = 'https://jsonplaceholder.typicode.com/users';
+    const URL = `https://api.github.com/users/${username}/events`;
     const options = { headers: { 'User-Agent': 'node-js-cli' } };
     try {
         const response = await fetch(URL, options);
@@ -16,7 +16,6 @@ async function main() {
             if (response.ok === 404 ) throw new Error('User not found');
             throw new Error(`Github API error: ${response.status}`);
         }
-
         const results = await response.json();
 
         results.forEach(event => {
