@@ -74,10 +74,9 @@ async function fetchLocalCache() {
 }
 
 // Top-level await is available in ES Modules
-
 // use local fetch on development environment, change to remote fetch on live environment
-// const event = await fetchGithubActivity();
-const events = await fetchLocalCache();
+const events = await fetchGithubActivity();
+// const events = await fetchLocalCache();
 
 const groupByEvent = events.reduce((accumulator, event) => {
     const action = getActionName(event);
@@ -90,19 +89,30 @@ const groupByEvent = events.reduce((accumulator, event) => {
     return accumulator;
 }, {});
 
-const actionType = Object.keys(groupByEvent);
+// Convert the object groupByEvent into an array of [actionName, repoObject]
+const sortedByAction = Object.entries(groupByEvent)
+    .map(([action, repos]) => {
+        // calculate the total event for this action
+        const totalEvents = Object.values(repos).reduce((sum, count) => {
+            return sum + count
+        }, 0);
+        return { action, repos, totalEvents };
+    })
+    .sort((a, b) => b.totalEvents - a.totalEvents);
 
 console.log(`Event Based Summary for ${username}`);
 console.log(`${'-'.repeat(50)}`);
 
-if (actionType.length === 0) {
+if (sortedByAction.length === 0) {
     console.log('No recent activity found for this user');
 } else {
-    actionType.forEach((action) => {
-        console.log(`\n${action}`);
+    sortedByAction.forEach(({ action, repos, totalEvents }) => {
+        const repoCount = Object.keys(repos).length;
+        const repoLabel = repoCount > 1 ? 'repositories' : 'repository';
+        console.log(`\n${totalEvents} ${action} in ${repoCount} ${repoLabel}`);
 
-        const sortedRepos = Object.entries(groupByEvent[action])
-            // Object.entries(groupByEvent[action]) will return something like this
+        const sortedRepos = Object.entries(repos)
+            // Object.entries(repos) will return something like this
             // [ 'SnosMe/poe-dat-viewer', 1 ] [ 'SnosMe/awakened-poe-trade', 4 ] 
             // you can sort with / without destructuring the array
 
