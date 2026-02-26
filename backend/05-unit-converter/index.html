@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unit Converter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <main>
+        <section class="converter">
+            <h1 class="converter_header">Unit Converter</h1>
+            <ul class="converter-list">
+                <li class="list__converter-unit active" data-type="length">Length</li>
+                <li class="list__converter-unit" data-type="weight">Weight</li>
+                <li class="list__converter-unit" data-type="temperature">Temperature</li>
+            </ul>
+
+            <form action="" class="converter__form">
+                <div class="converter-form__group">
+                    <label class="converter__label" for="convertValue">Value to Convert</label>
+                    <input type="text" id="convertValue" name="convertValue">
+                </div>
+                <div class="converter-form__group">
+                    <label class="converter__label" for="convertFrom">Convert From</label>
+                    <select id="convertFrom" name="convertFrom">
+                    </select>
+                </div>
+                <div class="converter-form__group">
+                    <label class="converter__label" for="convertTo">Convert To</label>
+                    <select id="convertTo" name="convertTo">
+                    </select>
+                </div>
+                <button type="button" id="converter__button">Convert</button>
+            </form>
+
+            <div id="result">
+            </div>
+        </section>
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
