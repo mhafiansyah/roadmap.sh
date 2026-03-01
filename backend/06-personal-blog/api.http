@@ -1,15 +1,54 @@
-# http://localhost:3000/admin/new/article HTTP/1.1
+GET http://localhost:3000/home HTTP/1.1
+
+# POST http://localhost:3000/admin/new/article HTTP/1.1
 # Content-Type: application/json
 
 # {
-#     "title": "third post",
-#     "content": "content of third post"
+#     "title": "two post",
+#     "content": "content of two post"
 # }
 
-http://localhost:3000/admin/edit/article/5 HTTP/1.1
-Content-Type: application/json
+# POST http://localhost:3000/admin/edit/article/6 HTTP/1.1
+# Content-Type: application/json
 
-{
-    "title": "fifth post",
-    "content": "content of fifth post"
-}
+# {
+#     "title": "sixth post",
+#     "content": "content of sixth post"
+# }
+
+# DELETE http://localhost:3000/admin/delete/article/:id HTTP/1.1
+# Content-Type: application/json
+
+
+
+###### API TEST ######
+
+# AUTH STATUS
+# GET http://localhost:3000/api/auth/ok HTTP/1.1
+# Content-Type: application/json
+
+# SIGN UP API
+# POST http://localhost:3000/sign-up HTTP/1.1
+# Content-Type: application/json
+
+# {
+#     "name": "alice",
+#     "email": "alice@example.com",
+#     "password": "alice123"
+# }
+
+# SIGN IN API
+# POST http://localhost:3000/sign-in HTTP/1.1
+# Content-Type: application/json
+
+# {
+#     "email": "alice@example.com",
+#     "password": "alice123"
+# }
+
+# SIGN OUT API
+# POST http://localhost:3000/sign-out HTTP/1.1
+
+# GET http://localhost:3000/api/protected HTTP/1.1
+
+# GET http://localhost:3000/api/auth/get-session HTTP/1.1
