@@ -15,7 +15,8 @@ const requireAuth = async (req: any, res: any, next: any) => {
 	});
 
 	if (!session) {
-		return res.json({ error: "Unauthorized" });
+        console.log('Unauthorized access');
+		return res.status(401).json({ error: "Unauthorized" });
 	}
 
 	// Attach session to request for use in route handlers
@@ -29,8 +30,9 @@ app.all('/api/auth/*splat', toNodeHandler(auth));
 
 app.use(express.json());
 app.use(cors({
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
+    // origin: "http://localhost:5173",
+    // methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    // credentials: true,
 }));
 app.use('/', guessRoutes);
 app.use('/admin', requireAuth, adminRoutes);
@@ -58,8 +60,8 @@ app.post('/sign-in', async(req, res) => {
     });
 
     session.headers.forEach((value, key) => {
-            res.setHeader(key, value);
-        });
+        res.setHeader(key, value);
+    });
 
     return res.json(await session.json());
 })

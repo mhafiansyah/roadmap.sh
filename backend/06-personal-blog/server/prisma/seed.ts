@@ -1,10 +1,22 @@
+import { auth } from '../src/lib/auth.js';
 import { prisma } from '../src/lib/prisma.js';
 
 const main = async() => {
+    const name = 'admin';
+    const email = 'email@example.com';
+    const password = 'admin123';
+
     // delete all records
     await prisma.blog.deleteMany();
     await prisma.user.deleteMany();
 
+    await auth.api.signUpEmail({
+        body: {
+            name,
+            email,
+            password,
+        },
+    });
     // create user
     // const alice = await prisma.user.create({
     //     data: {
