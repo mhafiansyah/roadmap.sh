@@ -9,6 +9,8 @@ Express, Redis, Axios
 ## Features
 
 - Caching API results using redis
+- Multiple city requests
+- Filter data by date
 
 ## Getting Started
 
@@ -38,4 +40,20 @@ npm install
 
 ```
 npm run dev
+```
+
+## How to
+
+how to fetch multiple city
+
+```
+http://localhost:[PORT]/weather?city=London,Jakarta
+or
+http://localhost:[PORT]/weather?cityLondon&city=Jakarta
+```
+
+how to fetch a specific date (YYYY-MM-DD)
+
+```
+http://localhost:[PORT]/weather?city=Jakarta&date=2026-03-10
 ```
