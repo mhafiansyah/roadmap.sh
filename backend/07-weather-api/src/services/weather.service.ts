@@ -20,7 +20,7 @@ export const getWeatherData = async (
 
   // fetch from api if there is no cache
   try {
-    const URL = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}${dateFilter}?unitGroup=metric&key=${API_KEY}&contentType=json`;
+    const URL = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${encodeURIComponent(city)}${dateFilter}?unitGroup=metric&key=${API_KEY}&contentType=json`;
     const response = await axios.get(URL);
     const data = response.data;
     if (!data || !data.address) {
@@ -38,11 +38,18 @@ export const getWeatherData = async (
     await redisClient.setEx(cacheKey, TTL, JSON.stringify(weatherData));
 
     return { ...weatherData, cache: false };
-  } catch (error) {
+  } catch (error: any) {
+    let errorMessage = 'Something went wrong while fetching from API';
+    if (axios.isAxiosError(error) && error.response?.status === 400) {
+      errorMessage = `City not found: ${city}`;
+    } else {
+      errorMessage = error.message || errorMessage;
+    }
+
     return {
       location: city,
       temp: 0,
-      error: 'Something went wrong while fetching from API',
+      error: errorMessage,
     };
   }
 };
