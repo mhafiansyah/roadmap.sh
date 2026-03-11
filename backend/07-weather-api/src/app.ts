@@ -5,9 +5,17 @@ const app = express();
 
 app.get('/weather', async (req: Request, res: Response) => {
   const cityQuery = req.query.city;
+  const date = req.query.date;
 
   if (!cityQuery) {
     res.status(400).json({ error: 'city parameter is required' });
+    return;
+  }
+
+  // check date format: YYYY-MM-DD using regex
+  if (date && (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date))) {
+    res.status(400).json({ error: 'date format need to be YYYY-MM-DD' });
+    return;
   }
 
   let cities: string[] = [];
@@ -24,7 +32,7 @@ app.get('/weather', async (req: Request, res: Response) => {
 
   try {
     const weatherData = await Promise.all(
-      cities.map((city) => getWeatherData(city)),
+      cities.map((city) => getWeatherData(city, date)),
     );
     res.json(weatherData);
   } catch (error) {

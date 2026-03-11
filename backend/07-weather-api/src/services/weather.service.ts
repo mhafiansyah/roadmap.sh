@@ -3,10 +3,14 @@ import { redisClient, redisConnect } from '@/services/redis.service.js';
 import type { IWeatherData } from '@/types/weather.js';
 import axios from 'axios';
 
-export const getWeatherData = async (city: string): Promise<IWeatherData> => {
-  const cacheKey = city;
+export const getWeatherData = async (
+  city: string,
+  date?: string,
+): Promise<IWeatherData> => {
+  const dateFilter = date ? `/${date}` : '';
+  const cacheKey = date ? `${city}:${date}` : city;
 
-  // check if cache is exist
+  // // check if cache is exist
   await redisConnect();
 
   const cachedData = await redisClient.get(cacheKey);
@@ -16,7 +20,7 @@ export const getWeatherData = async (city: string): Promise<IWeatherData> => {
 
   // fetch from api if there is no cache
   try {
-    const URL = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}?unitGroup=metric&key=${API_KEY}&contentType=json`;
+    const URL = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${city}${dateFilter}?unitGroup=metric&key=${API_KEY}&contentType=json`;
     const response = await axios.get(URL);
     const data = response.data;
     if (!data || !data.address) {
