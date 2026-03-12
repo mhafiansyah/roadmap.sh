@@ -1,9 +1,10 @@
+import { rateLimiter } from '@/config/middleware.js';
 import { getWeatherData } from '@/services/weather.service.js';
 import express, { type Request, type Response } from 'express';
 
 const app = express();
 
-app.get('/weather', async (req: Request, res: Response) => {
+app.get('/weather', rateLimiter, async (req: Request, res: Response) => {
   const cityQuery = req.query.city;
   const date = req.query.date;
 

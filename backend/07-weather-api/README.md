@@ -11,6 +11,7 @@ Express, Redis, Axios
 - Caching API results using redis
 - Multiple city requests
 - Filter data by date
+- Rate limit
 
 ## Getting Started
 
