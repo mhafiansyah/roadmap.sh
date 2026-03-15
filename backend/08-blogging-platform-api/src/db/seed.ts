@@ -14,9 +14,6 @@ const main = async () => {
 
   await db.insert(blogsTable).values(blog);
   console.log('New Post Created!');
-
-  // const blogs = await db.select().from(blogsTable);
-  // console.log(`Getting all blogs from the database: `, blogs);
 };
 
 main();
