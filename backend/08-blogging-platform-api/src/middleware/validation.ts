@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
-import { ZodObject, ZodError } from 'zod';
+import { ZodObject, ZodError, z } from 'zod';
 
 export const validateRequest = (schema: ZodObject<any, any>) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -15,7 +15,7 @@ export const validateRequest = (schema: ZodObject<any, any>) => {
       if (error instanceof ZodError) {
         return res.status(400).json({
           status: 'fail',
-          errors: error.issues,
+          errors: z.prettifyError(error),
         });
       }
       return res

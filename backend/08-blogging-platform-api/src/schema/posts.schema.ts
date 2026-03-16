@@ -10,9 +10,14 @@ export const parameterID = z.object({
 
 export const createPostSchema = z.object({
   body: z.strictObject({
-    title: z.string(),
-    content: z.string(),
-    category: z.string().optional(),
+    title: z
+      .string({ error: 'Title is required' })
+      .min(1, 'Title cannot be empty')
+      .max(255),
+    content: z
+      .string({ error: 'Content is required' })
+      .min(1, 'Content cannot be empty'),
+    category: z.string().max(100).optional(),
     tags: z.array(z.string()).optional(),
   }),
 });
@@ -20,9 +25,9 @@ export const createPostSchema = z.object({
 export const updatePostSchema = z.object({
   params: Id,
   body: z.strictObject({
-    title: z.string().optional(),
-    content: z.string().optional(),
-    category: z.string().optional(),
+    title: z.string().min(1).max(255).optional(),
+    content: z.string().min(1).optional(),
+    category: z.string().max(100).optional(),
     tags: z.array(z.string()).optional(),
   }),
 });
