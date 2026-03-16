@@ -1,6 +1,6 @@
 import { DATABASE_URL } from '@/config/env.js';
 import { blogsTable } from '@/db/schema.js';
-import { eq, ilike, or } from 'drizzle-orm';
+import { eq, getTableColumns, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 
 const db = drizzle(DATABASE_URL!);
@@ -61,8 +61,9 @@ export const deletePost = async (post_id: number) => {
 };
 
 export const getSinglePost = async (post_id: number) => {
+  const { searchVector, ...columnsToSelect } = getTableColumns(blogsTable);
   const [singlePost] = await db
-    .select()
+    .select(columnsToSelect)
     .from(blogsTable)
     .where(eq(blogsTable.id, post_id));
 
@@ -70,23 +71,22 @@ export const getSinglePost = async (post_id: number) => {
 };
 
 export const getAllPosts = async () => {
-  const posts = await db.select().from(blogsTable);
+  const { searchVector, ...columnsToSelect } = getTableColumns(blogsTable);
+  const posts = await db.select(columnsToSelect).from(blogsTable);
   return posts;
 };
 
 export const searchPosts = async (query: string) => {
-  const searchTerms = `%${query}%`;
   const startTime = performance.now();
 
+  // destructure columns to exclude searchVector field from the table
+  const { searchVector, ...columnsToSelect } = getTableColumns(blogsTable);
+
   const results = await db
-    .select()
+    .select(columnsToSelect)
     .from(blogsTable)
     .where(
-      or(
-        ilike(blogsTable.title, searchTerms),
-        ilike(blogsTable.content, searchTerms),
-        ilike(blogsTable.category, searchTerms),
-      ),
+      sql`${blogsTable.searchVector} @@ plainto_tsquery('english', ${query})`,
     );
 
   const endTime = performance.now();
