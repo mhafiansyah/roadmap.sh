@@ -106,27 +106,69 @@ export const getSinglePost = async (post_id: number) => {
   return singlePost ? { ...singlePost, cache: false } : null;
 };
 
-export const getAllPosts = async () => {
+export const getAllPosts = async (page: number = 1, limit: number = 2) => {
+  const offset = (page - 1) * limit;
+
   const { searchVector, ...columnsToSelect } = getTableColumns(blogsTable);
-  const posts = await db.select(columnsToSelect).from(blogsTable);
-  return posts;
+  const posts = await db
+    .select(columnsToSelect)
+    .from(blogsTable)
+    .limit(limit)
+    .offset(offset);
+
+  const [totalCountResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(blogsTable);
+
+  const totalItem = Number(totalCountResult?.count || 0);
+
+  return {
+    posts,
+    pagination: {
+      page,
+      limit,
+      totalItem,
+      totalPages: Math.ceil(totalItem / limit),
+    },
+  };
 };
 
-export const searchPosts = async (query: string) => {
+export const searchPosts = async (
+  query: string,
+  page: number = 1,
+  limit: number = 2,
+) => {
   const startTime = performance.now();
+  const offset = (page - 1) * limit;
 
   // destructure columns to exclude searchVector field from the table
   const { searchVector, ...columnsToSelect } = getTableColumns(blogsTable);
+  const searchConditions = sql`${blogsTable.searchVector} @@ plainto_tsquery('english', ${query})`;
 
   const results = await db
     .select(columnsToSelect)
     .from(blogsTable)
-    .where(
-      sql`${blogsTable.searchVector} @@ plainto_tsquery('english', ${query})`,
-    );
+    .where(searchConditions)
+    .limit(limit)
+    .offset(offset);
 
+  const [totalCountResult] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(blogsTable)
+    .where(searchConditions);
+
+  const totalItem = Number(totalCountResult?.count || 0);
   const endTime = performance.now();
   const searchTime = (endTime - startTime).toFixed(2);
 
-  return { results, searchTime };
+  return {
+    results,
+    searchTime,
+    pagination: {
+      page,
+      limit,
+      totalItem,
+      totalPages: Math.ceil(totalItem / limit),
+    },
+  };
 };

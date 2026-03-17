@@ -11,13 +11,14 @@ const router = Router();
 
 router.get('/', async (req: Request, res: Response) => {
   const searchTerms = req.query.terms as string;
+  const page = Number(req.query.page) || 1;
 
   if (!searchTerms) {
-    const allPosts = await posts.getAllPosts();
+    const allPosts = await posts.getAllPosts(page);
     return res.status(200).send(allPosts);
   }
 
-  const searchResults = await posts.searchPosts(searchTerms);
+  const searchResults = await posts.searchPosts(searchTerms, page);
   return res.status(200).send(searchResults);
 });
 
