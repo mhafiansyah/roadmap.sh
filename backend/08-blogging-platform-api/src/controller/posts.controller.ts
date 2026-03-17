@@ -73,13 +73,19 @@ export const deletePost = async (post_id: number) => {
 export const getSinglePost = async (post_id: number) => {
   // REDIS CACHING
   const cacheKey = `posts:${post_id}`;
+
   try {
     const cachedData = await redisClient.get(cacheKey);
+
     if (cachedData) {
       return { ...JSON.parse(cachedData), cache: true };
     }
   } catch (error) {
-    console.error('[getSinglePost] Redis Get Error:', error);
+    console.error('[getSinglePost] Redis Get Error (Get/Parse):', error);
+    // Delete caching, if it was a parse error, the key might be corrupted
+    await redisClient
+      .del(cacheKey)
+      .catch((err) => console.error('[getSingelPost] Redis Del Error:', err));
   }
 
   // FETCH FROM DB IF THERE IS NO CACHE
