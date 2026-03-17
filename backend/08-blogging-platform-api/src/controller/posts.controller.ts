@@ -2,6 +2,7 @@ import { DATABASE_URL } from '@/config/env.js';
 import { blogsTable } from '@/db/schema.js';
 import { eq, getTableColumns, sql } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
+import { redisClient } from '@/services/redis.services.js';
 
 const db = drizzle(DATABASE_URL!);
 
@@ -11,9 +12,6 @@ export const addPost = async (
   category?: string,
   tags?: string[],
 ) => {
-  if (!title || !content) {
-    return;
-  }
   const newPost: typeof blogsTable.$inferInsert = {
     title,
     content,
@@ -31,10 +29,6 @@ export const updatePost = async (
   category?: string,
   tags?: string[],
 ) => {
-  if (!title || !content) {
-    return 400;
-  }
-
   const newPostData = {
     title,
     content,
@@ -48,6 +42,14 @@ export const updatePost = async (
     .where(eq(blogsTable.id, post_id))
     .returning();
 
+  // DELETE REDIS CACHE IF EXISTS
+  if (updatedPost) {
+    const cacheKey = `posts:${post_id}`;
+    await redisClient
+      .del(cacheKey)
+      .catch((err) => console.error('[updatePost] Redis Delete Error: ', err));
+  }
+
   return updatedPost ?? null;
 };
 
@@ -57,17 +59,45 @@ export const deletePost = async (post_id: number) => {
     .where(eq(blogsTable.id, post_id))
     .returning({ id: blogsTable.id });
 
+  // DELETE REDIS CACHE IF EXISTS
+  if (deletedPost) {
+    const cacheKey = `posts:${post_id}`;
+    await redisClient
+      .del(cacheKey)
+      .catch((err) => console.error('[DeletePost] Redis Delete Error: ', err));
+  }
+
   return deletedPost;
 };
 
 export const getSinglePost = async (post_id: number) => {
+  // REDIS CACHING
+  const cacheKey = `posts:${post_id}`;
+  try {
+    const cachedData = await redisClient.get(cacheKey);
+    if (cachedData) {
+      return { ...JSON.parse(cachedData), cache: true };
+    }
+  } catch (error) {
+    console.error('[getSinglePost] Redis Get Error:', error);
+  }
+
+  // FETCH FROM DB IF THERE IS NO CACHE
   const { searchVector, ...columnsToSelect } = getTableColumns(blogsTable);
   const [singlePost] = await db
     .select(columnsToSelect)
     .from(blogsTable)
     .where(eq(blogsTable.id, post_id));
 
-  return singlePost ?? null;
+  if (singlePost) {
+    try {
+      await redisClient.setEx(cacheKey, 5 * 60, JSON.stringify(singlePost));
+    } catch (error) {
+      console.error('[getSinglePost] Redis Set Error:', error);
+    }
+  }
+
+  return singlePost ? { ...singlePost, cache: false } : null;
 };
 
 export const getAllPosts = async () => {
