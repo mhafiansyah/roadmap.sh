@@ -1,16 +1,20 @@
-import type { IAuthRequest } from '@/types/type.js';
-import type { Request, Response } from 'express';
+import type { IAuthRequest, ValidatedResponse } from '@/types/type.js';
+import type { Response } from 'express';
 import * as todoService from '@/services/todos.services.js';
+import type { TGetTodos } from '@/schema/todo.validation.js';
 
-export const getAllTodos = async (req: IAuthRequest, res: Response) => {
-  const { page = 1, limit = 2 } = req.query;
+export const getAllTodos = async (
+  req: IAuthRequest,
+  res: ValidatedResponse<TGetTodos>,
+) => {
+  const { query } = res.locals.validated;
   const userId = req.userId!;
 
   try {
     const todos = await todoService.getAllTodos(
       userId,
-      Number(page),
-      Number(limit),
+      query.page,
+      query.limit,
     );
     return res.status(200).json(todos);
   } catch (err) {

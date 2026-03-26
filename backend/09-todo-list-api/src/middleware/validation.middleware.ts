@@ -5,12 +5,13 @@ import z, { ZodError, type ZodObject } from 'zod';
 export const validateRequest = (schema: ZodObject<any>) => {
   return (req: IAuthRequest, res: Response, next: NextFunction) => {
     try {
-      schema.parse({
+      const validated = schema.parse({
         body: req.body,
         query: req.query,
         params: req.params,
       });
 
+      res.locals.validated = validated;
       next();
     } catch (err) {
       if (err instanceof ZodError) {

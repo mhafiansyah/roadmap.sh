@@ -4,16 +4,17 @@ export const Id = z.strictObject({
   id: z.string().regex(/^\d+$/, 'ID must be a number'),
 });
 
-export const pagination = z.object({
-  query: z.strictObject({
-    page: z.coerce.number().int().positive().default(1),
-    limit: z.coerce.number().int().min(1).max(20).default(5),
-  }),
-});
-
 export const paramsId = z.object({
   params: Id,
 });
+
+export const getTodos = z.object({
+  query: z.strictObject({
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().min(1).max(20).default(2),
+  }),
+});
+export type TGetTodos = z.infer<typeof getTodos>;
 
 export const createTodoSchema = z.object({
   body: z.strictObject({
@@ -21,6 +22,7 @@ export const createTodoSchema = z.object({
     description: z.string().optional(),
   }),
 });
+export type TCreateTodo = z.infer<typeof createTodoSchema>;
 
 export const updateTodoSchema = z.object({
   body: z.strictObject({
@@ -29,3 +31,4 @@ export const updateTodoSchema = z.object({
   }),
   params: Id,
 });
+export type TUpdateTodo = z.infer<typeof updateTodoSchema>;

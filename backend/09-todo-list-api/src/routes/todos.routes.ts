@@ -3,7 +3,7 @@ import { authenticate } from '@/middleware/auth.middleware.js';
 import { validateRequest } from '@/middleware/validation.middleware.js';
 import {
   createTodoSchema,
-  pagination,
+  getTodos,
   paramsId,
   updateTodoSchema,
 } from '@/schema/todo.validation.js';
@@ -11,20 +11,15 @@ import { Router } from 'express';
 
 const router = Router();
 
-router.get('/', authenticate, validateRequest(pagination), todo.getAllTodos);
-router.get('/:id', authenticate, validateRequest(paramsId), todo.getTodo);
-router.post(
-  '/',
-  authenticate,
-  validateRequest(createTodoSchema),
-  todo.createTodo,
-);
-router.put(
-  '/:id',
-  authenticate,
-  validateRequest(updateTodoSchema),
-  todo.updateTodo,
-);
-router.delete('/:id', authenticate, validateRequest(paramsId), todo.deleteTodo);
+router
+  .route('/')
+  .get(authenticate, validateRequest(getTodos), todo.getAllTodos)
+  .post(authenticate, validateRequest(createTodoSchema), todo.createTodo);
+
+router
+  .route('/:id')
+  .get(authenticate, validateRequest(paramsId), todo.getTodo)
+  .put(authenticate, validateRequest(updateTodoSchema), todo.updateTodo)
+  .delete(authenticate, validateRequest(paramsId), todo.deleteTodo);
 
 export default router;
