@@ -1,17 +1,24 @@
 import { db } from '@/db/index.js';
 import { todosTable, type InsertTodo } from '@/db/schema.js';
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, sql, asc, desc } from 'drizzle-orm';
 
 export const getAllTodos = async (
   userId: number,
   page: number,
   limit: number,
+  sortBy: 'id' | 'title' | 'description' = 'id',
+  order: 'asc' | 'desc' = 'desc',
 ) => {
   const offset = (page - 1) * limit;
+
+  const orderFunc = order === 'asc' ? asc : desc;
+  const orderBy = orderFunc(todosTable[sortBy]);
+
   const todos = await db
     .select()
     .from(todosTable)
     .where(eq(todosTable.userId, userId))
+    .orderBy(orderBy)
     .limit(limit)
     .offset(offset);
 

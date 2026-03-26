@@ -12,6 +12,8 @@ export const getTodos = z.object({
   query: z.strictObject({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().min(1).max(20).default(2),
+    sortBy: z.enum(['id', 'title', 'description']).default('id'),
+    order: z.enum(['asc', 'desc']).default('desc'),
   }),
 });
 export type TGetTodos = z.infer<typeof getTodos>;

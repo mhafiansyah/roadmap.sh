@@ -15,6 +15,8 @@ export const getAllTodos = async (
       userId,
       query.page,
       query.limit,
+      query.sortBy,
+      query.order,
     );
     return res.status(200).json(todos);
   } catch (err) {
