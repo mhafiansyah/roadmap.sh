@@ -1,9 +1,109 @@
 import { db } from '@/db/db.js';
-import { expenseTable } from '@/db/schema/expenses.js';
+import { expenseTable, type InsertExpense } from '@/db/schema/expenses.js';
 import type { ValidatedResponse } from '@/types/api.types.js';
 import * as v from '@/validation/expense.validation.js';
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import type { Request } from 'express';
+
+type CreateExpenseValues = Omit<
+  InsertExpense,
+  'id' | 'createdAt' | 'updatedAt'
+>;
+
+type CreateExpenseValuesWithoutDate = Omit<CreateExpenseValues, 'date'>;
+
+type UpdateExpenseValues = Partial<
+  Omit<InsertExpense, 'id' | 'userId' | 'createdAt'>
+>;
+
+const toCreateExpenseValues = (
+  body: v.CreateExpenseInput,
+  userId: number,
+): CreateExpenseValues => ({
+  description: body.description,
+  amount: body.amount.toString(),
+  category: body.category,
+  date: body.date,
+  userId,
+});
+
+const toUpdateExpenseValues = (
+  body: v.UpdateExpenseInput,
+): UpdateExpenseValues => {
+  const values: UpdateExpenseValues = {
+    updatedAt: new Date(),
+  };
+
+  if (body.description !== undefined) values.description = body.description;
+  if (body.amount !== undefined) values.amount = body.amount.toString();
+  if (body.category !== undefined) values.category = body.category;
+  if (body.date !== undefined) values.date = body.date;
+
+  return values;
+};
+
+const getExpenseByIdQuery = db
+  .select()
+  .from(expenseTable)
+  .where(
+    and(
+      eq(expenseTable.id, sql.placeholder('id')),
+      eq(expenseTable.userId, sql.placeholder('userId')),
+    ),
+  )
+  .prepare('get_expense_by_id');
+
+const createExpenseQuery = db
+  .insert(expenseTable)
+  .values({
+    description: sql.placeholder('description'),
+    amount: sql.placeholder('amount'),
+    category: sql.placeholder('category'),
+    date: sql.placeholder('date'),
+    userId: sql.placeholder('userId'),
+  })
+  .returning()
+  .prepare('create_expense');
+
+const createExpenseWithoutDateQuery = db
+  .insert(expenseTable)
+  .values({
+    description: sql.placeholder('description'),
+    amount: sql.placeholder('amount'),
+    category: sql.placeholder('category'),
+    userId: sql.placeholder('userId'),
+  })
+  .returning()
+  .prepare('create_expense_without_date');
+
+const updateExpenseQuery = db
+  .update(expenseTable)
+  .set({
+    description: sql`coalesce(${sql.placeholder('description')}, ${expenseTable.description})`,
+    amount: sql`coalesce(${sql.placeholder('amount')}, ${expenseTable.amount})`,
+    category: sql`coalesce(${sql.placeholder('category')}, ${expenseTable.category})`,
+    date: sql`coalesce(${sql.placeholder('date')}, ${expenseTable.date})`,
+    updatedAt: sql`${sql.placeholder('updatedAt')}`,
+  })
+  .where(
+    and(
+      eq(expenseTable.id, sql.placeholder('id')),
+      eq(expenseTable.userId, sql.placeholder('userId')),
+    ),
+  )
+  .returning()
+  .prepare('update_expense');
+
+const deleteExpenseQuery = db
+  .delete(expenseTable)
+  .where(
+    and(
+      eq(expenseTable.id, sql.placeholder('id')),
+      eq(expenseTable.userId, sql.placeholder('userId')),
+    ),
+  )
+  .returning()
+  .prepare('delete_expense');
 
 export const getAllExpenses = async (
   req: Request,
@@ -60,10 +160,7 @@ export const getExpenseById = async (
     const userId = Number(req.user?.sub);
     const { id } = res.locals.validated.params;
 
-    const [expense] = await db
-      .select()
-      .from(expenseTable)
-      .where(and(eq(expenseTable.id, id), eq(expenseTable.userId, userId)));
+    const [expense] = await getExpenseByIdQuery.execute({ id, userId });
 
     if (!expense) {
       return res.status(404).json({ message: 'Expense not found' });
@@ -83,14 +180,13 @@ export const createExpense = async (
     const userId = Number(req.user?.sub);
     const { body } = res.locals.validated;
 
-    const [newExpense] = await db
-      .insert(expenseTable)
-      .values({
-        ...body,
-        amount: body.amount.toString(),
-        userId,
-      })
-      .returning();
+    const values = toCreateExpenseValues(body, userId);
+    const [newExpense] =
+      values.date === undefined
+        ? await createExpenseWithoutDateQuery.execute(
+            values satisfies CreateExpenseValuesWithoutDate,
+          )
+        : await createExpenseQuery.execute(values);
 
     res.status(201).json(newExpense);
   } catch (error) {
@@ -106,17 +202,17 @@ export const updateExpense = async (
     const userId = Number(req.user?.sub);
     const { params, body } = res.locals.validated;
 
-    const [updatedExpense] = await db
-      .update(expenseTable)
-      .set({
-        ...body,
-        amount: body.amount ? body.amount.toString() : undefined, // Convert if present
-        updatedAt: new Date(),
-      })
-      .where(
-        and(eq(expenseTable.id, params.id), eq(expenseTable.userId, userId)),
-      )
-      .returning();
+    const values = toUpdateExpenseValues(body);
+
+    const [updatedExpense] = await updateExpenseQuery.execute({
+      id: params.id,
+      userId,
+      description: values.description,
+      amount: values.amount,
+      category: values.category,
+      date: values.date,
+      updatedAt: values.updatedAt,
+    });
 
     if (!updatedExpense) {
       return res.status(404).json({ message: 'Expense not found' });
@@ -136,10 +232,7 @@ export const deleteExpense = async (
     const userId = Number(req.user?.sub);
     const { id } = res.locals.validated.params;
 
-    const [deletedExpense] = await db
-      .delete(expenseTable)
-      .where(and(eq(expenseTable.id, id), eq(expenseTable.userId, userId)))
-      .returning();
+    const [deletedExpense] = await deleteExpenseQuery.execute({ id, userId });
 
     if (!deletedExpense) {
       return res.status(404).json({ message: 'Expense not found' });

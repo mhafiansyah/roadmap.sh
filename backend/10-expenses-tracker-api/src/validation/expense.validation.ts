@@ -1,4 +1,4 @@
-import { categories, type InsertExpense } from '@/db/schema/expenses.js';
+import { categories } from '@/db/schema/expenses.js';
 import z from 'zod';
 
 export const idSchema = z.object({
@@ -7,12 +7,19 @@ export const idSchema = z.object({
   }),
 });
 
+type ExpenseBody = {
+  description: string;
+  amount: number;
+  category: (typeof categories)[number];
+  date?: string | undefined;
+};
+
 const expenseBody = z.strictObject({
   description: z.string().min(1).max(255),
   amount: z.coerce.number().positive(),
   category: z.enum(categories),
   date: z.iso.date().optional(),
-});
+}) satisfies z.ZodType<ExpenseBody>;
 
 export const createExpenseSchema = z.object({
   body: expenseBody,
