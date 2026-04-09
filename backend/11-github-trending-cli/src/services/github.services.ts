@@ -1,7 +1,7 @@
 import type { TDurationOptions } from '@/types/cli.types.js';
-import { getDateConvert } from '@/types/dateConverter.js';
+import { getDateConvert } from '@/utils/dateConverter.js';
 
-export type TGithubRepository = {
+type TGithubRepository = {
   name: string;
   url: string;
   description: string | null;
