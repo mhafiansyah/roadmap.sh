@@ -36,14 +36,20 @@ export const fetchGithubTrending = async (
   };
 
   const response = await fetch(URL, { headers });
+  const rateRemaining = response.headers.get('x-ratelimit-remaining');
+  const rateReset = response.headers.get('x-ratelimit-reset');
+
   if (!response.ok) {
+    if (response.status === 403 && rateRemaining === '0') {
+      const resetDate = new Date(Number(rateReset) * 1000).toLocaleDateString();
+      throw new Error(`Github rate limit exceeded. Try again at ${resetDate}`);
+    }
     throw new Error(
       `Github API requests failed with status ${response.status}`,
     );
   }
-
+  console.log(`Requests remaining: ${rateRemaining}`);
   const data = (await response.json()) as TGithubSearchResponse;
-  // console.log(JSON.stringify({ data }, null, 2));
 
   return data.items.map((repo) => {
     return {
