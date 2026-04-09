@@ -15,21 +15,35 @@ export const parseArguments = (args: string[]): T.TCliOptions => {
     const value = args[i + 1];
 
     if (arg === '--duration') {
-      if (value !== undefined && isValidDuration(value)) {
-        options.duration = value;
-      } else {
-        console.error(
-          `Invalid duration, Expected :${T.VALID_DURATIONS.join(', ')}`,
+      if (value === undefined) {
+        throw new Error('--duration requires a value');
+      }
+
+      if (!isValidDuration(value)) {
+        throw new Error(
+          `Invalid duration: "${value}". Expected one of: ${T.VALID_DURATIONS.join(', ')}`,
         );
       }
+
+      options.duration = value;
+      i++;
     } else if (arg === '--limit') {
+      if (value === undefined) {
+        throw new Error('--limit requires a numeric value');
+      }
+
       const parsedValue = Number(value);
 
-      if (value !== undefined && !isNaN(parsedValue) && parsedValue <= 30) {
-        options.limit = parsedValue;
-      } else {
-        console.error('limit need to be a number and less than 30');
+      if (isNaN(parsedValue)) {
+        throw new Error(`Invalid limit: "${value}" is not a number`);
       }
+
+      if (parsedValue < 1 || parsedValue > 30) {
+        throw new Error('Limit must be a nubmer between 1 and 30');
+      }
+
+      options.limit = parsedValue;
+      i++;
     }
   }
 
