@@ -18,9 +18,9 @@ export const cacheProxy =
       if (cachedResponse) {
         const { body } = JSON.parse(cachedResponse);
 
+        res.setHeader('X-Cache', 'HIT');
         res.json({
           body,
-          cached: true,
         });
         return;
       }
@@ -43,6 +43,7 @@ export const cacheProxy =
       }
 
       res.status(status);
+      res.setHeader('X-Cache', 'MISS');
       if (response.ok) {
         const cacheValue = JSON.stringify({
           body: parsedBody,
@@ -55,7 +56,7 @@ export const cacheProxy =
           .catch((error) => {
             console.error('Failed to write to redis cache', error);
           });
-        res.json({ body: parsedBody, cached: false });
+        res.json({ body: parsedBody });
       }
     } catch (error) {
       next(error);
