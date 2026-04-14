@@ -35,4 +35,16 @@ program
     }
   });
 
+program
+  .command('clear-cache')
+  .description('delete all cached response from proxy server')
+  .action(async () => {
+    await cache.connect();
+    try {
+      await cache.clearCache();
+    } finally {
+      await cache.disconnect();
+    }
+  });
+
 await program.parseAsync();

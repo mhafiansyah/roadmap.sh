@@ -18,3 +18,21 @@ export const disconnect = async () => {
     await client.quit();
   }
 };
+
+export const clearCache = async () => {
+  try {
+    let count = 0;
+
+    for await (const key of client.scanIterator({
+      MATCH: 'cache:*',
+      COUNT: 100,
+    })) {
+      await client.del(key);
+      count++;
+    }
+
+    console.log(`Successfully cleared ${count} keys`);
+  } catch (error) {
+    console.error('Failed to clear cache', error);
+  }
+};
