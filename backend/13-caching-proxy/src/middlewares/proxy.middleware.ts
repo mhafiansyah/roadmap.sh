@@ -1,5 +1,6 @@
 import type { RequestHandler, Response } from 'express';
 import * as cache from '@/services/redis.service.js';
+import { CACHE_TTL } from '@/configs/env.js';
 
 const CACHEABLE_HEADERS = new Set([
   'cache-control',
@@ -80,7 +81,7 @@ export const cacheProxy =
 
         cache.client
           .set(cacheKey, cacheValue, {
-            EX: 60,
+            EX: CACHE_TTL,
           })
           .catch((error) => {
             console.error('Failed to write to redis cache', error);
