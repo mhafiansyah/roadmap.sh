@@ -1,5 +1,33 @@
-import type { RequestHandler } from 'express';
+import type { RequestHandler, Response } from 'express';
 import * as cache from '@/services/redis.service.js';
+
+const CACHEABLE_HEADERS = new Set([
+  'cache-control',
+  'content-encoding',
+  'content-language',
+  'content-type',
+  'etag',
+  'expires',
+  'last-modified',
+  'vary',
+]);
+
+const getCacheableHeaders = (headers: Headers): Record<string, string> => {
+  const cachedHeaders: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    if (CACHEABLE_HEADERS.has(key)) {
+      cachedHeaders[key] = value;
+    }
+  });
+
+  return cachedHeaders;
+};
+
+const applyHeaders = (res: Response, headers: Record<string, string>) => {
+  for (const [key, value] of Object.entries(headers)) {
+    res.setHeader(key, value);
+  }
+};
 
 export const cacheProxy =
   ({ origin }: { origin: string }): RequestHandler =>
@@ -16,10 +44,10 @@ export const cacheProxy =
       const cachedResponse = await cache.client.get(cacheKey);
 
       if (cachedResponse) {
-        const { body } = JSON.parse(cachedResponse);
+        const { body, headers, status } = JSON.parse(cachedResponse);
 
-        res.setHeader('X-Cache', 'HIT');
-        res.json({
+        applyHeaders(res, { ...headers, 'X-Cache': 'HIT' });
+        res.status(status).json({
           body,
         });
         return;
@@ -33,7 +61,7 @@ export const cacheProxy =
       const targetUrl = new URL(req.originalUrl, origin);
       const response = await fetch(targetUrl);
       const rawBody = await response.text();
-      const status = response.status;
+      const headers = getCacheableHeaders(response.headers);
 
       let parsedBody;
       try {
@@ -42,11 +70,12 @@ export const cacheProxy =
         parsedBody = rawBody;
       }
 
-      res.status(status);
-      res.setHeader('X-Cache', 'MISS');
+      applyHeaders(res, { ...headers, 'X-Cache': 'MISS' });
       if (response.ok) {
         const cacheValue = JSON.stringify({
           body: parsedBody,
+          headers,
+          status: response.status,
         });
 
         cache.client
@@ -56,7 +85,8 @@ export const cacheProxy =
           .catch((error) => {
             console.error('Failed to write to redis cache', error);
           });
-        res.json({ body: parsedBody });
+
+        res.status(response.status).send({ body: parsedBody });
       }
     } catch (error) {
       next(error);
